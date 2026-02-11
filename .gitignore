@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+vendor/
+target/
+
+# IDEs
+.vscode/
+.idea/
+
+# Environment files
+.env
+.env.local
+
+# Logs and databases
+*.log
+docker/db_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+.next/
+dist/
+build/
