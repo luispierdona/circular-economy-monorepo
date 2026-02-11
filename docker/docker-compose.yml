@@ -1,0 +1,77 @@
+services:
+  # Base de Datos
+  database:
+    image: postgres:15-alpine
+    container_name: circular-db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: circular_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  # Backend Laravel
+  laravel-api:
+    build:
+      context: ../apps/laravel-auth-api
+      dockerfile: ../../docker/php.dockerfile # Crearemos este archivo ahora
+    container_name: laravel-app
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../apps/laravel-auth-api:/var/www/html
+    depends_on:
+      - database
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_DATABASE: circular_db
+      DB_USERNAME: admin
+      DB_PASSWORD: password123
+  
+  # Backend Java Spring Boot
+  spring-api:
+    build:
+      context: ../apps/spring-metrics-api
+      dockerfile: ../../docker/spring.dockerfile
+    container_name: spring-app
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../apps/spring-metrics-api:/app
+    depends_on:
+      - database
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/circular_db
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=password123
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update # Esto crea las tablas automáticamente
+  
+  # Frontend Next.js
+  web-frontend:
+    build:
+      context: ../apps/web-frontend
+      dockerfile: ../../docker/nextjs.dockerfile
+    container_name: nextjs-app
+    restart: always
+    ports:
+      - "3000:3000"
+    # user: "node" Permissions problems
+    volumes:
+      - ../apps/web-frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL_JAVA=http://localhost:8080/api
+      - NEXT_PUBLIC_API_URL_PHP=http://localhost:8000/api # Puerto 8000 para Laravel
+    depends_on:
+      - database
+
+volumes:
+  db_data:
